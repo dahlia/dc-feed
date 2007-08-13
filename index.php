@@ -4,9 +4,10 @@ if(!$_GET['id'])
 
 require_once 'DC/Gallery.php';
 
-$limit = max($_GET['limit'], 0);
-$url = 'http://'.$_SERVER['SERVER_NAME'].$_SERVER['REQUEST_URI'];
-$gallery = new DCGallery($_GET['id']);
+$limit		= max($_GET['limit'], 0);
+$url		= 'http://'.$_SERVER['SERVER_NAME'].$_SERVER['REQUEST_URI'];
+$imageProxy	= dirname($url).'/image-proxy.php';
+$gallery	= new DCGallery($_GET['id']);
 
 $articles = call_user_func_array(
 	'array_merge',
@@ -25,6 +26,16 @@ for($i = 0, $count = count($articles); $i < $count; ++$i) {
 	if($updatedAt == $articles[$i]->createdAt)
 		break;
 	unset($articles[$i]);
+}
+
+function content($content) {
+	global $imageProxy;
+
+	return ereg_replace(
+		'http://(img[0-9]+).dcinside.com/viewimage.php(\\?[^"\']+)',
+		$imageProxy.'/\\1\\2',
+		$content
+	);
 }
 
 function cdata($string) {
@@ -57,8 +68,8 @@ echo '<?xml version="1.0" encoding="UTF-8" ?>';
 				<?php endif ?>
 			</author>
 
-			<summary type="html"><?php cdata($article->content) ?></summary>
-			<content type="html"><?php cdata($article->content) ?></content>
+			<summary type="html"><?php cdata(content($article->content)) ?></summary>
+			<content type="html"><?php cdata(content($article->content)) ?></content>
 		</entry>
 	<?php endforeach ?>
 </feed>
