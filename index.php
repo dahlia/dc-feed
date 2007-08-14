@@ -4,10 +4,18 @@ if(!$_GET['id'])
 
 require_once 'DC/Gallery.php';
 
-$limit		= max($_GET['limit'], 0);
-$url		= 'http://'.$_SERVER['SERVER_NAME'].$_SERVER['REQUEST_URI'];
-$imageProxy	= dirname($url).'/image-proxy.php';
-$gallery	= new DCGallery($_GET['id']);
+$limit   = max($_GET['limit'], 0);
+$url     = 'http://'.$_SERVER['SERVER_NAME'].$_SERVER['REQUEST_URI'];
+$gallery = new DCGallery($_GET['id']);
+
+$imageProxies = array_filter(
+	array_map('trim', (array) @file('image-proxies')),
+	create_function('$line', '
+		return strlen($line) > 0 and $line{0} != "#"; 
+	')
+);
+$imageProxies[] = dirname($url).'/image-proxy.php';
+shuffle($imageProxies);
 
 $articles = call_user_func_array(
 	'array_merge',
@@ -29,7 +37,11 @@ for($i = 0, $count = count($articles); $i < $count; ++$i) {
 }
 
 function content($content) {
-	global $imageProxy;
+	global $imageProxies;
+
+	$imageProxy = current($imageProxies);
+	if(!next($imageProxies))
+		reset($imageProxies);
 
 	return ereg_replace(
 		'http://(img[0-9]+).dcinside.com/viewimage.php(\\?[^"\']+)',
