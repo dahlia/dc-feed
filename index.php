@@ -1,12 +1,24 @@
 <?php
+if(get_magic_quotes_gpc())
+	$_GET = array_map('stripslashes', $_GET);
+
 if(!$_GET['id'])
 	exit;
 
+@set_time_limit(120);
 require_once 'DC/Gallery.php';
 
 $limit   = max($_GET['limit'], 0);
 $url     = 'http://'.$_SERVER['SERVER_NAME'].$_SERVER['REQUEST_URI'];
 $gallery = new DCGallery($_GET['id']);
+
+if(!strlen(trim($gallery->title)) and !empty($_GET['title'])) {
+	$gallery->title	= (function_exists('iconv') and function_exists('mb_detect_encoding'))
+					? iconv(mb_detect_encoding($_GET['title'], 'auto'), 'UTF-8', $_GET['title'])
+					: function_exists('mb_convert_encoding')
+					? mb_convert_encoding($_GET['title'], 'utf-8', 'auto')
+					: $_GET['title'];
+}
 
 $imageProxies = array_filter(
 	array_map('trim', (array) @file('image-proxies')),
