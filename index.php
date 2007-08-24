@@ -8,9 +8,10 @@ if(!$_GET['id'])
 @set_time_limit(120);
 require_once 'DC/Gallery.php';
 
+$id = $_GET['id'];
 $limit   = max($_GET['limit'], 0);
 $url     = 'http://'.$_SERVER['SERVER_NAME'].$_SERVER['REQUEST_URI'];
-$gallery = new DCGallery($_GET['id']);
+$gallery = new DCGallery($id);
 
 if(!strlen(trim($gallery->title)) and !empty($_GET['title'])) {
 	$gallery->title	= (function_exists('iconv') and function_exists('mb_detect_encoding'))
@@ -20,12 +21,18 @@ if(!strlen(trim($gallery->title)) and !empty($_GET['title'])) {
 					: $_GET['title'];
 }
 
-$imageProxies = array_filter(
-	array_map('trim', (array) @file('image-proxies')),
-	create_function('$line', '
-		return strlen($line) > 0 and $line{0} != "#"; 
-	')
-);
+function isEmptyLine($line) {
+	return strlen($line) > 0 and $line{0} != '#'; 
+}
+
+function ignoreEmptyLines($lines) {
+	return array_filter(
+		array_map('trim', (array) $lines),
+		'isEmptyLine'
+	);
+}
+
+$imageProxies = ignoreEmptyLines(@file('image-proxies'));
 $imageProxies[] = dirname($url).'/image-proxy.php';
 shuffle($imageProxies);
 
@@ -46,6 +53,24 @@ for($i = 0, $count = count($articles); $i < $count; ++$i) {
 	if($updatedAt == $articles[$i]->createdAt)
 		break;
 	unset($articles[$i]);
+}
+
+$ignorePatterns = array_merge(
+	ignoreEmptyLines(@file('ignore-patterns/__all__')),
+	ignoreEmptyLines(@file("ignore-patterns/$id"))
+);
+
+function isIgnored($article) {
+	global $ignorePatterns;
+
+	foreach($ignorePatterns as $pattern) {
+		if(eregi($pattern, $article->subject) or
+			eregi($pattern, $article->content)) {
+			return true;
+		}
+	}
+
+	return false;
 }
 
 function content($content) {
@@ -78,22 +103,24 @@ echo '<?xml version="1.0" encoding="UTF-8" ?>';
 	<link rel="alternate" href="<?php cdata($gallery->url) ?>" type="text/html" />
 
 	<?php foreach($articles as $article): ?>
-		<entry>
-			<id><?php cdata($article->url) ?></id>
-			<title><?php cdata($article) ?></title>
-			<link rel="alternate" href="<?php cdata($article->url) ?>" type="text/html" />
-			<published><?php echo $article->createdAt->format(DATE_ATOM) ?></published>
-			<updated><?php echo $article->createdAt->format(DATE_ATOM) ?></updated>
-			
-			<author>
-				<name><?php cdata($article->author) ?></name>
-				<?php if($article->author->url): ?>
-					<uri><?php cdata($article->author->url) ?></uri>
-				<?php endif ?>
-			</author>
+		<?php if(!isIgnored($article)): ?>
+			<entry>
+				<id><?php cdata($article->url) ?></id>
+				<title><?php cdata($article) ?></title>
+				<link rel="alternate" href="<?php cdata($article->url) ?>" type="text/html" />
+				<published><?php echo $article->createdAt->format(DATE_ATOM) ?></published>
+				<updated><?php echo $article->createdAt->format(DATE_ATOM) ?></updated>
+				
+				<author>
+					<name><?php cdata($article->author) ?></name>
+					<?php if($article->author->url): ?>
+						<uri><?php cdata($article->author->url) ?></uri>
+					<?php endif ?>
+				</author>
 
-			<summary type="html"><?php cdata(content($article->content)) ?></summary>
-			<content type="html"><?php cdata(content($article->content)) ?></content>
-		</entry>
+				<summary type="html"><?php cdata(content($article->content)) ?></summary>
+				<content type="html"><?php cdata(content($article->content)) ?></content>
+			</entry>
+		<?php endif ?>
 	<?php endforeach ?>
 </feed>
