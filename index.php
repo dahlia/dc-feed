@@ -64,8 +64,8 @@ function isIgnored($article) {
 	global $ignorePatterns;
 
 	foreach($ignorePatterns as $pattern) {
-		if(eregi($pattern, $article->subject) or
-			eregi($pattern, $article->content)) {
+		if(@preg_match($pattern, $article->subject) or
+			@preg_match($pattern, $article->content)) {
 			return true;
 		}
 	}
