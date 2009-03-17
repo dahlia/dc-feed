@@ -1,60 +1,100 @@
 <?php
-require_once dirname(__FILE__).'/Gallery.php';
-require_once dirname(__FILE__).'/User.php';
+require_once dirname(__FILE__) . '/Gallery.php';
+require_once dirname(__FILE__) . '/User.php';
 require_once 'HTTP/Request.php';
 
-final class DCArticle {
-	public $gallery;
-	public $id;
-	protected $_subject;
-	protected $_createdAt;
-	protected $_author;
-	protected $_content;
-	public $url;
+final class DCInside_Article {
+    const AUTHOR_PATTERN = '{
+        # author
+        <strong> (?: 이 \s* 름 | 갤로거 ) </strong> \s* </a> \s* </td> \s*
+        <td [^>]* > \s* </td> \s*
+        <td [^>]* > \s*
+        <span [^>]* > \s*
+            (?: <span [^>]* > \s* )?
+                (?P<author> .+? ) \s*
+            (?: </span> \s* )?
+        </span> \s*
+        (?: <img [^>]*? " (?P<author_url> http://gallog.dcinside.com/[^"]+ ) "
+                 [^>]* > \s* )?
+        </td>
+        .*?
 
-	function __construct(DCGallery $gallery, $id, $subject = null, DateTime $createdAt = null, DCUser $author = null) {
-		$this->gallery = $gallery;
-		$this->id = $id;
-		$this->_subject = $subject;
-		$this->_createdAt = $createdAt;
-		$this->_author = $author;
-		$this->_content = null;
+        # subject
+        <strong> 제 \s* 목 </strong> \s* </a> \s* </td> \s*
+        <td [^>]* > \s* </td> \s*
+        <td [^>]* > \s*
+            (?P<subject> .+? ) \s*
+        </td>
+    }imsux';
 
-		$this->url = $gallery->url."&no=$id";
-	}
+    const CONTENT_PATTERN = '{
+        <span \s* style=line-height: \s* 160%> \s*
+        (<div \s* style=["\'] position: \s* relative; ["\'] \s* > )?
+        (?P<content> .+ )
+        <br> \s* <div \s* align=right \s*
+                          style=font-family:tahoma;font-size=8pt>
+        .+?
+        (?P<created_at> \d{4}-\d{2}-\d{2} \s+ \d{2}:\d{2}:\d{2})
+    }imsux';
 
-	function __get($name) {
-		$lazyAttributes = array('subject', 'createdAt', 'author', 'content');
+    public $gallery;
+    public $id;
+    public $url;
+    protected $_subject;
+    protected $_createdAt;
+    protected $_author;
+    protected $_content;
 
-		if(!in_array($name, $lazyAttributes))
-			return null;
+    function __construct(DCInside_Gallery $gallery, $id, $subject = null,
+                         DateTime $createdAt = null,
+                         DCInside_User $author = null) {
+        $this->gallery = $gallery;
+        $this->id = $id;
+        $this->url = "{$gallery->url}&no=$id";
+        $this->_subject = $subject;
+        $this->_createdAt = $createdAt;
+        $this->_author = $author;
+        $this->_content = null;
+    }
 
-		$name = "_$name";
-		if(is_null($this->$name))
-			$this->retrieve();
-		return $this->$name;
-	}
+    function __get($name) {
+        $lazyAttributes = array('subject', 'createdAt', 'author', 'content');
+        if (!in_array($name, $lazyAttributes)) return null;
 
-	protected function retrieve() {
-		$http = new HTTP_Request($this->url);
-		$http->sendRequest();
-		$body = $http->getResponseBody();
-		
-		preg_match('{<td align=left width=100%> *(?:<span .+?onClick[^>]+>)? *(<span +title=[^>]+>)?(?P<author>.+?)</span>(?:</td>|</span>.+?(?P<author_url>http://gallog.dcinside.com/[^"\']+)")?.+?<td align=left> *(?P<subject>.+?)</td>}imsu', $body, $author_subject);
+        $name = "_$name";
+        if (is_null($this->$name)) {
+            $this->retrieve();
+        }
 
-		preg_match('{<span *style=line-height: *160%>\s*(<div *style=["\']position: *relative;["\'] *>)?(?P<content>.+)<br>\s*<div align=right style=font-family:tahoma;font-size=8pt>.+?(?P<created_at>\\d{4}-\\d{2}-\\d{2} +\\d{2}:\\d{2}:\\d{2})}imsu', $body, $content_createdAt);
-		
-		$this->_subject = htmlspecialchars_decode($author_subject['subject']);
-		$this->_createdAt = new DateTime($content_createdAt['created_at']);
-		$this->_content = $content_createdAt['content'];
-		
-		$this->_author = new DCUser(
-			htmlspecialchars_decode($author_subject['author']),
-			htmlspecialchars_decode($author_subject['author_url'])
-		);
-	}
+        return $this->$name;
+    }
 
-	function __toString() {
-		return $this->__get('subject');
-	}
+    protected function retrieve() {
+        $http = new HTTP_Request($this->url);
+        $http->sendRequest();
+        $body = $http->getResponseBody();
+
+        if (preg_match(self::AUTHOR_PATTERN, $body, $subject)) {
+            $this->_subject = htmlspecialchars_decode($subject['subject']);
+            $this->_author = new DCInside_User(
+                htmlspecialchars_decode($subject['author']),
+                htmlspecialchars_decode($subject['author_url'])
+            );
+        } else {
+            $this->_subject = '';
+            $this->_author = null;
+        }
+
+        if (preg_match(self::CONTENT_PATTERN, $body, $content)) {
+            $this->_createdAt = new DateTime($content['created_at']);
+            $this->_content = $content['content'];
+        } else {
+            $this->_createdAt = $this->_content = '';
+        }
+    }
+
+    function __toString() {
+        return $this->__get('subject');
+    }
 }
+
