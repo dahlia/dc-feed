@@ -28,7 +28,7 @@ if (!trim($gallery->title) && !empty($_GET['title'])) {
 }
 
 function isEmptyLine($line) {
-	return $line && $line[0] != '#'; 
+	return $line && $line[0] != '#';
 }
 
 function ignoreEmptyLines($lines) {
