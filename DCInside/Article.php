@@ -29,12 +29,14 @@ final class DCInside_Article {
 
     const CONTENT_PATTERN = '{
         <span \s* style=line-height: \s* 160%> \s*
-        (<div \s* style=["\'] position: \s* relative; ["\'] \s* > )?
+        (<div \s* style=["\'] \s* position: \s* relative; \s*
+                                  (z-index: \s* \d+; \s*)? ["\'] \s* > )?
         (?P<content> .+? )
         <!-- \s* google_ad_section_end \s* --> \s*
         .*?
         <div \s* align=right \s*
                  style=font-family:tahoma;font-size:8pt;padding-right:15px;>
+        ( \s* IP \s* Address \s* : \s* [0-9.*]+ \s* )?
         \s* <br \s* /> \s*
         (?P<created_at> \d{4}-\d{2}-\d{2} \s+ \d{2}:\d{2}:\d{2})
         \s* <br \s* /> \s* </div>
