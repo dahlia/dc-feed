@@ -1,0 +1,21 @@
+feed { padding: 1em; font-family: sans-serif; }
+feed > title:before { content: '\b514\c2dc\c778\c0ac\c774\b4dc: ';
+                      font-weight: normal; }
+feed > title { font-size: x-large; font-weight: bolder; }
+feed id { color: gray; font-family: monospace; }
+feed > updated:before { content: '(\cd5c\adfc \c5c5\b370\c774\d2b8: '; }
+feed > updated { display: block; margin: 1em 0; }
+feed > updated:after { content: ')'; }
+feed > entry { display: block; margin: 1em 0; border-top: 1px dashed silver;
+               padding-top: 1em; }
+feed > entry > id { display: block; }
+feed > entry > title { font-size: large; font-weight: bolder; }
+feed > entry > published:before { content: '('; }
+feed > entry > published { color: gray; font-size: small; }
+feed > entry > published:after { content: ')'; }
+feed > entry > author:before { content: '\2014'; }
+feed > entry > author > uri { color: gray; font-family: monospace; }
+feed > entry > summary { display: block; font-family: monospace;
+                         margin-top: 1em; }
+feed > entry > updated, feed > entry > content { display: none; } 
+link { display: none; }

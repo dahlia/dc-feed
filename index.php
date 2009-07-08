@@ -91,8 +91,9 @@ function cdata($string) {
 	echo htmlspecialchars($string);
 }
 
-header('Content-Type: text/xml; charset=UTF-8');
-echo '<?xml version="1.0" encoding="UTF-8" ?>';
+header('Content-Type: text/xml; charset=utf-8');
+echo '<?xml version="1.0" encoding="utf-8" ?>';
+echo '<?xml-stylesheet type="text/css" href="atom.css" ?>';
 ?>
 
 <feed xmlns="http://www.w3.org/2005/Atom">
