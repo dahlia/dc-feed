@@ -6,7 +6,8 @@ require_once dirname(__FILE__) . '/Article.php';
 final class DCInside_GalleryPage
             implements ArrayAccess, Countable, IteratorAggregate {
     const ARTICLE_LINK_PATTERN = '{
-        <a \s* href=" (?P<url> /list\.php\?id=[^&]+&no=(?P<no>\d+)&page=\d+ ) "
+        <a \s+ href=" (?P<url> /list\.php\?id=[^&]+&no=(?P<no>\d+)&page=\d+ )
+					  .*? "
            \s* > (?P<subject> [^<]+ ) </a>
         .*?
         (?P<created_at> \d{4}-\d\d-\d\d \s+ \d\d:\d\d:\d\d)
@@ -27,7 +28,7 @@ final class DCInside_GalleryPage
 
         preg_match_all(
             self::ARTICLE_LINK_PATTERN,
-            $http->getResponseBody(),
+            $b=$http->getResponseBody(),
             $matches,
             PREG_SET_ORDER
         );
